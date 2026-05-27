@@ -1,0 +1,47 @@
+# Binaries
+bin/
+hearth
+hearthd
+
+# Test output
+*.test
+*.out
+coverage.txt
+
+# Go workspace
+go.work
+go.work.sum
+
+# Build cache
+vendor/
+
+# Database files
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Config with secrets
+*.local.yaml
+*.local.yml
+*.local.env
+.env
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor artifacts
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# golangci-lint cache
+.golangci-lint/
+
+# testcontainers
+.testcontainers/

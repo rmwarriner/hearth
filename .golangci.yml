@@ -1,0 +1,84 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/hearth-ledger/hearth
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - misspell
+    - unconvert
+    - nilerr
+    - gosec
+
+  settings:
+    govet:
+      disable:
+        - fieldalignment
+        - unusedwrite
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      exclude-functions:
+        # fmt output to terminal writers: errors only occur when stdout is closed,
+        # which is a fatal condition not worth checking per-call.
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Printf
+        - fmt.Print
+        - fmt.Println
+        # tabwriter.Flush only errors if the underlying writer errors.
+        - (text/tabwriter.Writer).Flush
+        - (*text/tabwriter.Writer).Flush
+        # cobra flag getters: only fail if the flag doesn't exist (programming error).
+        - (github.com/spf13/pflag.FlagSet).GetString
+        - (*github.com/spf13/pflag.FlagSet).GetString
+        - (github.com/spf13/pflag.FlagSet).GetBool
+        - (*github.com/spf13/pflag.FlagSet).GetBool
+        - (github.com/spf13/pflag.FlagSet).GetInt
+        - (*github.com/spf13/pflag.FlagSet).GetInt
+        - (github.com/spf13/pflag.FlagSet).GetStringArray
+        - (*github.com/spf13/pflag.FlagSet).GetStringArray
+        - (github.com/spf13/cobra.Command).MarkFlagRequired
+        - (*github.com/spf13/cobra.Command).MarkFlagRequired
+        # viper.ReadInConfig: "file not found" is a normal condition.
+        - (github.com/spf13/viper.Viper).ReadInConfig
+        - (*github.com/spf13/viper.Viper).ReadInConfig
+        - github.com/spf13/viper.ReadInConfig
+        # rows.Close and db.Close in deferred cleanup.
+        - (*database/sql.Rows).Close
+        - (*database/sql.DB).Close
+        # ParseOutputFormat: always called with a known-valid default ("table"),
+        # so parse errors are programmer errors, not runtime conditions.
+        - github.com/hearth-ledger/hearth/internal/cli.ParseOutputFormat
+    gosec:
+      severity: medium
+      confidence: medium
+      excludes:
+        - G204 # subprocess with variable is intentional in test helpers
+
+issues:
+  exclude-rules:
+    - path: "_test\\.go"
+      linters:
+        - gosec
+        - unparam
+    - path: "internal/cli/"
+      linters:
+        - unparam
+  max-issues-per-linter: 0
+  max-same-issues: 0
