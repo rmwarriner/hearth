@@ -235,6 +235,12 @@ func (s *Service) issueTokenPair(ctx context.Context, m member.Member, familyID 
 	}, nil
 }
 
+// HashNewPassword hashes plain using the service's configured bcrypt cost.
+// Used by handlers that create new members or change passwords.
+func (s *Service) HashNewPassword(plain string) (string, error) {
+	return HashPassword(plain, s.cfg.BcryptCost)
+}
+
 // HashToken returns the hex-encoded SHA-256 hash of a raw token string.
 // Exported so middleware can hash the Bearer token before store lookup.
 func HashToken(raw string) string {

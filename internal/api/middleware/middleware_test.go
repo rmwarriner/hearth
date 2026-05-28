@@ -291,3 +291,6 @@ func (f *fakeStore) ListMembers(_ context.Context, _ account.HouseholdID) ([]mem
 func (f *fakeStore) UpdateMemberRole(_ context.Context, _ member.MemberID, _ member.Role) error {
 	panic("unexpected")
 }
+func (f *fakeStore) ListLockedPeriods(_ context.Context, _ account.HouseholdID) ([]period.FiscalPeriod, error) {
+	panic("unexpected")
+}

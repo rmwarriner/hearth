@@ -44,6 +44,7 @@ type Store interface {
 
 	CreateFiscalPeriod(ctx context.Context, p period.FiscalPeriod) error
 	LockFiscalPeriod(ctx context.Context, id period.PeriodID) error
+	ListLockedPeriods(ctx context.Context, householdID account.HouseholdID) ([]period.FiscalPeriod, error)
 
 	// Members
 
