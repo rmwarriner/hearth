@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,7 +20,7 @@ func hearth(t *testing.T, dbPath string, args ...string) (stdout, stderr string,
 
 	// Build the binary if it doesn't exist
 	if _, err := os.Stat(bin); os.IsNotExist(err) {
-		build := exec.Command("go", "build", "-o", bin, "../../cmd/hearth")
+		build := exec.CommandContext(context.Background(), "go", "build", "-o", bin, "../../cmd/hearth")
 		build.Dir = "."
 		if out, err := build.CombinedOutput(); err != nil {
 			t.Fatalf("failed to build hearth: %s\n%s", err, out)
@@ -29,7 +30,7 @@ func hearth(t *testing.T, dbPath string, args ...string) (stdout, stderr string,
 	// Use a per-test config file so tests don't share household_id state.
 	configPath := dbPath + ".config.yaml"
 
-	cmd := exec.Command(bin, args...)
+	cmd := exec.CommandContext(context.Background(), bin, args...)
 	cmd.Env = append(os.Environ(),
 		"HEARTH_DB="+dbPath,
 		"HEARTH_CONFIG="+configPath,

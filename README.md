@@ -34,6 +34,16 @@ make test
 make lint
 ```
 
+## TUI Quick Start
+
+```bash
+# After running hearth init, launch the interactive TUI
+./bin/hearth tui
+
+# Or via make
+make tui
+```
+
 ## CLI Quick Start (local SQLite)
 
 ```bash
@@ -85,4 +95,4 @@ HEARTH_TEST_DB_URL="postgres://..." make migrate-postgres
 
 See [`docs/architecture/hearth-architecture.md`](docs/architecture/hearth-architecture.md) for the full design document and [`docs/architecture/adr/`](docs/architecture/adr/) for Architecture Decision Records.
 
-**Current status:** Phase 2 (Server Mode) complete. See [`docs/architecture/PHASE2.md`](docs/architecture/PHASE2.md) for the Phase 2 spec and acceptance criteria.
+**Current status:** Phase 3 (TUI) complete. See [`docs/architecture/PHASE3.md`](docs/architecture/PHASE3.md) for the Phase 3 spec and acceptance criteria.

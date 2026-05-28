@@ -76,7 +76,7 @@ func TestAuthenticate_ValidToken_PassesThrough(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -87,7 +87,7 @@ func TestAuthenticate_MissingHeader_Returns401(t *testing.T) {
 	svc, _ := newAuthService(t)
 	handler := middleware.Authenticate(svc)(okHandler())
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
@@ -97,7 +97,7 @@ func TestAuthenticate_InvalidToken_Returns401(t *testing.T) {
 	svc, _ := newAuthService(t)
 	handler := middleware.Authenticate(svc)(okHandler())
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer not-a-real-token")
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -120,7 +120,7 @@ func TestAuthenticate_ExpiredToken_Returns401(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	handler := middleware.Authenticate(svc)(okHandler())
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -144,7 +144,7 @@ func TestVerifyHousehold_MatchingHousehold_PassesThrough(t *testing.T) {
 		})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/households/hh-001", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/households/hh-001", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
@@ -163,7 +163,7 @@ func TestVerifyHousehold_WrongHousehold_Returns403(t *testing.T) {
 		r.Get("/", okHandler().ServeHTTP)
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/households/hh-002", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/households/hh-002", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
@@ -178,7 +178,7 @@ func TestRecovery_PanicHandler_Returns500(t *testing.T) {
 	})
 	handler := middleware.Recovery(panic_handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)

@@ -45,6 +45,12 @@ func New(s store.Store, householdID account.HouseholdID) App {
 	}
 }
 
+// SetError injects an error message into the App model for testing.
+func (a App) SetError(msg string) App {
+	a.errMsg = msg
+	return a
+}
+
 // Start launches the TUI program. It blocks until the user quits.
 func Start(s store.Store, householdID account.HouseholdID) error {
 	p := tea.NewProgram(New(s, householdID), tea.WithAltScreen())

@@ -1,7 +1,7 @@
 # Hearth — Architecture & Design Document
 ### A Cloud-Native Household Accounting System
 
-> **Status**: Phase 2 complete — REST API + JWT auth + PostgreSQL operational  
+> **Status**: Phase 3 complete — TUI (bubbletea + lipgloss + huh) operational  
 > **Targets**: macOS · Linux · iOS  
 > **Paradigm**: Cloud-native, offline-capable, privacy-first  
 > **Build Method**: AI tooling (Claude Code)
@@ -494,7 +494,7 @@ SQLite local mode · Core accounting engine · GAAP guard · CLI (cobra) · goos
 ### Phase 2 — Server Mode ✓ **(complete)**
 PostgreSQL support · REST API (chi) · JWT auth · Household + member model · RLS · Docker deployment · OpenAPI spec
 
-### Phase 3 — TUI
+### Phase 3 — TUI ✓ **(complete)**
 Bubbletea TUI · Dashboard · Account tree · Transaction entry · Envelope overview
 
 ### Phase 4 — Import & Sync
@@ -557,5 +557,5 @@ ADRs capture *why* a decision was made, not just what was decided. They are inva
 
 ---
 
-*Document version: 0.3 — Phase 2 complete (2026-05-28)*  
-*Next step: Phase 3 — TUI (bubbletea + lipgloss)*
+*Document version: 0.4 — Phase 3 complete (2026-05-28)*  
+*Next step: Phase 4 — Import & Sync (OFX/QIF/CSV, SimpleFIN, local↔server sync)*

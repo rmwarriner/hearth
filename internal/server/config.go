@@ -10,16 +10,16 @@ import (
 
 // Config holds all runtime configuration for hearthd.
 type Config struct {
-	ListenAddr      string        `mapstructure:"listen_addr"`
-	LogLevel        string        `mapstructure:"log_level"`
-	LogFormat       string        `mapstructure:"log_format"`
-	DatabaseURL     string        `mapstructure:"database_url"`
-	JWTSecret       string        `mapstructure:"jwt_secret"`
-	AccessTokenTTL  time.Duration `mapstructure:"access_token_ttl"`
-	RefreshTokenTTL time.Duration `mapstructure:"refresh_token_ttl"`
-	BcryptCost      int           `mapstructure:"bcrypt_cost"`
-	DBMaxConns      int32         `mapstructure:"db_max_conns"`
-	DBMinConns      int32         `mapstructure:"db_min_conns"`
+	ListenAddr       string        `mapstructure:"listen_addr"`
+	LogLevel         string        `mapstructure:"log_level"`
+	LogFormat        string        `mapstructure:"log_format"`
+	DatabaseURL      string        `mapstructure:"database_url"`
+	JWTSecret        string        `mapstructure:"jwt_secret"`
+	AccessTokenTTL   time.Duration `mapstructure:"access_token_ttl"`
+	RefreshTokenTTL  time.Duration `mapstructure:"refresh_token_ttl"`
+	BcryptCost       int           `mapstructure:"bcrypt_cost"`
+	DBMaxConns       int32         `mapstructure:"db_max_conns"`
+	DBMinConns       int32         `mapstructure:"db_min_conns"`
 	DBConnectTimeout time.Duration `mapstructure:"db_connect_timeout"`
 }
 

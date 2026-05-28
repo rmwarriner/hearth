@@ -31,7 +31,8 @@ func New(ctx context.Context, cfg Config) (*Server, error) {
 
 // Start begins listening. It blocks until the context is cancelled or an error occurs.
 func (s *Server) Start(ctx context.Context) error {
-	ln, err := net.Listen("tcp", s.http.Addr)
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", s.http.Addr)
 	if err != nil {
 		return fmt.Errorf("listen %s: %w", s.http.Addr, err)
 	}
