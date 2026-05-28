@@ -79,3 +79,28 @@ func TestNewLogger_RedactsAllDenyListedKeys(t *testing.T) {
 		})
 	}
 }
+
+func TestNewLogger_RedactsNonStringValueTypes(t *testing.T) {
+	t.Run("int_value", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := observability.NewLoggerWithWriter(&buf, observability.Config{Level: "debug", Format: "json"})
+		logger.Info().Int("amount", 42).Msg("test")
+		assert.Contains(t, buf.String(), "[REDACTED]")
+	})
+
+	t.Run("float_value", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := observability.NewLoggerWithWriter(&buf, observability.Config{Level: "debug", Format: "json"})
+		logger.Info().Float64("amount", 99.99).Msg("test")
+		out := buf.String()
+		assert.NotContains(t, out, "99.99", "float value for sensitive key 'amount' should be redacted")
+		assert.Contains(t, out, "[REDACTED]")
+	})
+
+	t.Run("bool_value", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := observability.NewLoggerWithWriter(&buf, observability.Config{Level: "debug", Format: "json"})
+		logger.Info().Bool("balance", true).Msg("test")
+		assert.Contains(t, buf.String(), "[REDACTED]")
+	})
+}

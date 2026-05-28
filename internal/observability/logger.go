@@ -51,10 +51,11 @@ func (r redactWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// redactField replaces the value of a JSON string field named key with "[REDACTED]".
-// It handles the pattern `"key":"<value>"` and processes all occurrences in the line.
+// redactField replaces the value of any JSON field named key with `"[REDACTED]"`.
+// It handles string, number, boolean, null, object, and array values so that
+// sensitive keys cannot leak regardless of the value type logged.
 func redactField(line, key string) string {
-	needle := `"` + key + `":"`
+	needle := `"` + key + `":`
 	var result strings.Builder
 	pos := 0
 
@@ -65,27 +66,88 @@ func redactField(line, key string) string {
 			break
 		}
 		absStart := pos + start
+		afterColon := absStart + len(needle)
 
-		// Write everything up to and including the opening quote of the value.
-		result.WriteString(line[pos : absStart+len(needle)])
-		result.WriteString("[REDACTED]")
+		// Write up to and including the colon; replace value with a redacted string.
+		result.WriteString(line[pos:afterColon])
+		result.WriteString(`"[REDACTED]"`)
 
-		// Advance past the original value to find the closing quote.
-		valueEnd := absStart + len(needle)
-		for valueEnd < len(line) {
-			if line[valueEnd] == '\\' {
-				valueEnd += 2
-				continue
-			}
-			if line[valueEnd] == '"' {
-				break
-			}
-			valueEnd++
-		}
-		// pos now starts after the original value (the closing quote will be written next).
-		pos = valueEnd
+		// Advance pos past the original value.
+		pos = skipJSONValue(line, afterColon)
 	}
 	return result.String()
+}
+
+// skipJSONValue advances past the JSON value starting at pos in line.
+// Handles strings, numbers, booleans, nulls, objects, and arrays.
+func skipJSONValue(line string, pos int) int {
+	// Skip optional leading whitespace.
+	for pos < len(line) && (line[pos] == ' ' || line[pos] == '\t') {
+		pos++
+	}
+	if pos >= len(line) {
+		return pos
+	}
+	switch line[pos] {
+	case '"':
+		// JSON string — scan to unescaped closing quote.
+		pos++
+		for pos < len(line) {
+			if line[pos] == '\\' {
+				pos += 2
+				continue
+			}
+			if line[pos] == '"' {
+				pos++
+				break
+			}
+			pos++
+		}
+	case '{', '[':
+		// Object or array — track nesting depth.
+		open := line[pos]
+		var close byte
+		if open == '{' {
+			close = '}'
+		} else {
+			close = ']'
+		}
+		depth := 1
+		pos++
+		for pos < len(line) && depth > 0 {
+			switch line[pos] {
+			case '"':
+				pos++
+				for pos < len(line) {
+					if line[pos] == '\\' {
+						pos += 2
+						continue
+					}
+					if line[pos] == '"' {
+						pos++
+						break
+					}
+					pos++
+				}
+				continue
+			case open:
+				depth++
+			case close:
+				depth--
+			}
+			pos++
+		}
+	default:
+		// Number, boolean (true/false), or null — ends at a structural delimiter.
+		for pos < len(line) {
+			c := line[pos]
+			if c == ',' || c == '}' || c == ']' || c == '\n' || c == ' ' || c == '\t' {
+				break
+			}
+			pos++
+		}
+	}
+	return pos
 }
 
 // NewLogger creates a zerolog.Logger with the given configuration and the
