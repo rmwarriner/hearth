@@ -6,6 +6,7 @@ import (
 
 	"github.com/hearth-ledger/hearth/internal/core/account"
 	"github.com/hearth-ledger/hearth/internal/core/currency"
+	"github.com/hearth-ledger/hearth/internal/core/envelope"
 	"github.com/hearth-ledger/hearth/internal/core/household"
 	"github.com/hearth-ledger/hearth/internal/core/journal"
 	"github.com/hearth-ledger/hearth/internal/core/member"
@@ -53,6 +54,13 @@ type Store interface {
 	GetMemberByEmail(ctx context.Context, householdID account.HouseholdID, email string) (member.Member, error)
 	ListMembers(ctx context.Context, householdID account.HouseholdID) ([]member.Member, error)
 	UpdateMemberRole(ctx context.Context, id member.MemberID, role member.Role) error
+
+	// Envelopes
+
+	CreateEnvelope(ctx context.Context, e envelope.Envelope) error
+	ListEnvelopes(ctx context.Context, householdID account.HouseholdID) ([]envelope.Envelope, error)
+	CreateEnvelopeAllocation(ctx context.Context, a envelope.Allocation) error
+	ListEnvelopeAllocations(ctx context.Context, envelopeID envelope.EnvelopeID) ([]envelope.Allocation, error)
 
 	// Refresh tokens (server mode only; SQLite returns ErrNotImplemented)
 

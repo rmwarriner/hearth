@@ -12,6 +12,7 @@ import (
 
 	"github.com/hearth-ledger/hearth/internal/core/account"
 	"github.com/hearth-ledger/hearth/internal/core/currency"
+	"github.com/hearth-ledger/hearth/internal/core/envelope"
 	"github.com/hearth-ledger/hearth/internal/core/household"
 	"github.com/hearth-ledger/hearth/internal/core/journal"
 	"github.com/hearth-ledger/hearth/internal/core/member"
@@ -429,4 +430,113 @@ func TestSQLiteStore_UpdateMemberRole_NotFound_ReturnsMemberNotFound(t *testing.
 	var he *hearth.HearthError
 	require.ErrorAs(t, err, &he)
 	assert.Equal(t, hearth.ErrMemberNotFound, he.Code)
+}
+
+// ── Envelopes ─────────────────────────────────────────────────────────────────
+
+func seedEnvelope(t *testing.T, s *sqlite.Store) envelope.Envelope {
+	t.Helper()
+	e := envelope.Envelope{
+		ID:          "env-1",
+		HouseholdID: "hh-1",
+		Name:        "Groceries",
+		TargetAmount: currency.Amount{
+			Value:    decimal.NewFromInt(500),
+			Currency: "USD",
+		},
+		PeriodType:     envelope.PeriodMonthly,
+		RolloverPolicy: envelope.RolloverZero,
+	}
+	require.NoError(t, s.CreateEnvelope(context.Background(), e))
+	return e
+}
+
+func TestSQLiteStore_CreateEnvelope_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	seedEnvelope(t, s)
+}
+
+func TestSQLiteStore_ListEnvelopes_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	want := seedEnvelope(t, s)
+
+	envelopes, err := s.ListEnvelopes(context.Background(), "hh-1")
+	require.NoError(t, err)
+	require.Len(t, envelopes, 1)
+	got := envelopes[0]
+	assert.Equal(t, want.ID, got.ID)
+	assert.Equal(t, want.Name, got.Name)
+	assert.Equal(t, want.HouseholdID, got.HouseholdID)
+	assert.Equal(t, want.PeriodType, got.PeriodType)
+	assert.Equal(t, want.RolloverPolicy, got.RolloverPolicy)
+	assert.True(t, want.TargetAmount.Value.Equal(got.TargetAmount.Value))
+	assert.Equal(t, want.TargetAmount.Currency, got.TargetAmount.Currency)
+}
+
+func TestSQLiteStore_ListEnvelopes_EmptyHousehold_ReturnsEmpty(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+
+	envelopes, err := s.ListEnvelopes(context.Background(), "hh-1")
+	require.NoError(t, err)
+	assert.Empty(t, envelopes)
+}
+
+func TestSQLiteStore_CreateEnvelopeAllocation_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	env := seedEnvelope(t, s)
+
+	alloc := envelope.Allocation{
+		ID:          "alloc-1",
+		EnvelopeID:  env.ID,
+		PeriodStart: time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+		Amount:      currency.Amount{Value: decimal.NewFromInt(450), Currency: "USD"},
+	}
+	require.NoError(t, s.CreateEnvelopeAllocation(context.Background(), alloc))
+}
+
+func TestSQLiteStore_ListEnvelopeAllocations_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	env := seedEnvelope(t, s)
+
+	a1 := envelope.Allocation{
+		ID:          "alloc-1",
+		EnvelopeID:  env.ID,
+		PeriodStart: time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+		Amount:      currency.Amount{Value: decimal.NewFromInt(400), Currency: "USD"},
+	}
+	a2 := envelope.Allocation{
+		ID:          "alloc-2",
+		EnvelopeID:  env.ID,
+		PeriodStart: time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+		Amount:      currency.Amount{Value: decimal.NewFromInt(450), Currency: "USD"},
+	}
+	require.NoError(t, s.CreateEnvelopeAllocation(context.Background(), a1))
+	require.NoError(t, s.CreateEnvelopeAllocation(context.Background(), a2))
+
+	allocs, err := s.ListEnvelopeAllocations(context.Background(), env.ID)
+	require.NoError(t, err)
+	require.Len(t, allocs, 2)
+	// newest first
+	assert.Equal(t, envelope.AllocationID("alloc-2"), allocs[0].ID)
+	assert.Equal(t, envelope.AllocationID("alloc-1"), allocs[1].ID)
+	assert.True(t, decimal.NewFromInt(450).Equal(allocs[0].Amount.Value))
+}
+
+func TestSQLiteStore_CreateEnvelopeAllocation_UnknownEnvelope_ReturnsError(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+
+	alloc := envelope.Allocation{
+		ID:          "alloc-x",
+		EnvelopeID:  "no-such-envelope",
+		PeriodStart: time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+		Amount:      currency.Amount{Value: decimal.NewFromInt(100), Currency: "USD"},
+	}
+	err := s.CreateEnvelopeAllocation(context.Background(), alloc)
+	require.Error(t, err)
 }

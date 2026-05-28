@@ -13,6 +13,7 @@ import (
 	"github.com/hearth-ledger/hearth/internal/auth"
 	"github.com/hearth-ledger/hearth/internal/core/account"
 	"github.com/hearth-ledger/hearth/internal/core/currency"
+	"github.com/hearth-ledger/hearth/internal/core/envelope"
 	"github.com/hearth-ledger/hearth/internal/core/household"
 	"github.com/hearth-ledger/hearth/internal/core/journal"
 	"github.com/hearth-ledger/hearth/internal/core/member"
@@ -172,6 +173,18 @@ func (f *fakeStore) UpdateMemberRole(_ context.Context, _ member.MemberID, _ mem
 	panic("fakeStore: unexpected call")
 }
 func (f *fakeStore) ListLockedPeriods(_ context.Context, _ account.HouseholdID) ([]period.FiscalPeriod, error) {
+	panic("fakeStore: unexpected call")
+}
+func (f *fakeStore) CreateEnvelope(_ context.Context, _ envelope.Envelope) error {
+	panic("fakeStore: unexpected call")
+}
+func (f *fakeStore) ListEnvelopes(_ context.Context, _ account.HouseholdID) ([]envelope.Envelope, error) {
+	panic("fakeStore: unexpected call")
+}
+func (f *fakeStore) CreateEnvelopeAllocation(_ context.Context, _ envelope.Allocation) error {
+	panic("fakeStore: unexpected call")
+}
+func (f *fakeStore) ListEnvelopeAllocations(_ context.Context, _ envelope.EnvelopeID) ([]envelope.Allocation, error) {
 	panic("fakeStore: unexpected call")
 }
 
