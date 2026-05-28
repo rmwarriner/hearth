@@ -11,13 +11,13 @@
 
 Phase 1 is complete when all of the following are true:
 
-- [ ] `go build ./...` succeeds with zero warnings
-- [ ] `go test -race ./...` passes with 90%+ coverage on `internal/core/`
-- [ ] `golangci-lint run` reports zero issues
-- [ ] The CLI commands listed below execute correctly against a SQLite database
-- [ ] All GAAP guard rules are covered by table-driven tests
-- [ ] The Store interface is satisfied by the SQLite implementation
-- [ ] The PostgreSQL implementation compiles (stubs acceptable) but is not required to pass tests
+- [x] `go build ./...` succeeds with zero warnings
+- [x] `go test -race ./...` passes with 90%+ coverage on `internal/core/`
+- [x] `golangci-lint run` reports zero issues
+- [x] The CLI commands listed below execute correctly against a SQLite database
+- [x] All GAAP guard rules are covered by table-driven tests
+- [x] The Store interface is satisfied by the SQLite implementation
+- [x] The PostgreSQL implementation compiles (stubs acceptable) but is not required to pass tests
 
 ---
 
@@ -306,12 +306,12 @@ Do not implement, stub, or reference these in Phase 1 code:
 
 ## Definition of Done
 
-A PR (or completed session) for Phase 1 is done when:
+**Phase 1 is complete as of 2026-05-27.** All criteria met:
 
-1. `make build` — clean
-2. `make test` — all pass, race detector clean, ≥90% coverage on `internal/core/`
-3. `make lint` — zero issues
-4. `make migrate-sqlite` — idempotent, clean
-5. All 9 task acceptance criteria above are met
-6. Four ADRs are written
-7. `README.md` has accurate build and quickstart instructions
+1. `make build` — clean ✓
+2. `make test` — all pass, race detector clean, ≥90% coverage on `internal/core/` ✓
+3. `make lint` — zero issues ✓
+4. `make migrate-sqlite` — idempotent, clean ✓
+5. All 9 task acceptance criteria above are met ✓
+6. Four ADRs are written ✓
+7. `README.md` has accurate build and quickstart instructions ✓

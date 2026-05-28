@@ -55,3 +55,5 @@ make migrate-sqlite
 ## Architecture
 
 See [`docs/architecture/hearth-architecture.md`](docs/architecture/hearth-architecture.md) for the full design document and [`docs/architecture/adr/`](docs/architecture/adr/) for Architecture Decision Records.
+
+**Current status:** Phase 1 (Core Foundation) complete. See [`docs/architecture/PHASE1.md`](docs/architecture/PHASE1.md) for the Phase 1 spec and acceptance criteria.
