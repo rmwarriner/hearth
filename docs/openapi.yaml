@@ -1,0 +1,1121 @@
+openapi: "3.0.3"
+info:
+  title: Hearth API
+  version: "1.0.0"
+  description: >
+    REST API for the Hearth household accounting system.
+    All monetary amounts are decimal strings (never floating-point).
+    All timestamps are RFC 3339 in UTC.
+
+servers:
+  - url: /api/v1
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ── Error ─────────────────────────────────────────────────────────────────
+    HearthError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: ACCOUNT_NOT_FOUND
+        message:
+          type: string
+          example: Account "acct-123" not found
+        hints:
+          type: array
+          items:
+            type: string
+        help:
+          type: string
+          example: hearth help accounts
+
+    # ── Pagination ─────────────────────────────────────────────────────────────
+    Meta:
+      type: object
+      required: [total, limit, offset]
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [household_id, email, password]
+      properties:
+        household_id:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, expires_in]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Access token lifetime in seconds
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    LogoutRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    # ── Household ─────────────────────────────────────────────────────────────
+    Household:
+      type: object
+      required: [id, name, base_currency, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        base_currency:
+          type: string
+          example: USD
+        created_at:
+          type: string
+          format: date-time
+
+    UpdateHouseholdRequest:
+      type: object
+      properties:
+        name:
+          type: string
+
+    # ── Member ────────────────────────────────────────────────────────────────
+    Member:
+      type: object
+      required: [id, household_id, display_name, email, role, created_at]
+      properties:
+        id:
+          type: string
+        household_id:
+          type: string
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [owner, member, viewer]
+        created_at:
+          type: string
+          format: date-time
+
+    CreateMemberRequest:
+      type: object
+      required: [display_name, email, role, password]
+      properties:
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [owner, member, viewer]
+        password:
+          type: string
+          format: password
+
+    UpdateMemberRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [owner, member, viewer]
+
+    MemberList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+        meta:
+          $ref: "#/components/schemas/Meta"
+
+    # ── Account ───────────────────────────────────────────────────────────────
+    Account:
+      type: object
+      required: [id, household_id, name, type, currency, is_placeholder, created_at]
+      properties:
+        id:
+          type: string
+        household_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [asset, liability, equity, income, expense]
+        currency:
+          type: string
+          example: USD
+        parent_id:
+          type: string
+          nullable: true
+        is_placeholder:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreateAccountRequest:
+      type: object
+      required: [id, name, type, currency]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [asset, liability, equity, income, expense]
+        currency:
+          type: string
+        parent_id:
+          type: string
+        is_placeholder:
+          type: boolean
+          default: false
+
+    UpdateAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        is_placeholder:
+          type: boolean
+
+    AccountList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
+        meta:
+          $ref: "#/components/schemas/Meta"
+
+    AccountBalance:
+      type: object
+      required: [account_id, currency, balance, as_of]
+      properties:
+        account_id:
+          type: string
+        currency:
+          type: string
+        balance:
+          type: string
+          description: Decimal string, e.g. "1234.56"
+        as_of:
+          type: string
+          format: date-time
+
+    # ── Journal Entry ─────────────────────────────────────────────────────────
+    Posting:
+      type: object
+      required: [id, account_id, amount, currency]
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        amount:
+          type: string
+          description: Decimal string; positive = debit, negative = credit
+        currency:
+          type: string
+        memo:
+          type: string
+
+    JournalEntry:
+      type: object
+      required: [id, household_id, posted_at, description, source, created_by, postings]
+      properties:
+        id:
+          type: string
+        household_id:
+          type: string
+        posted_at:
+          type: string
+          format: date-time
+        description:
+          type: string
+        reference:
+          type: string
+        source:
+          type: string
+        created_by:
+          type: string
+        is_reversal_of:
+          type: string
+          nullable: true
+        postings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Posting"
+
+    CreateJournalEntryRequest:
+      type: object
+      required: [id, posted_at, description, postings]
+      properties:
+        id:
+          type: string
+        posted_at:
+          type: string
+          format: date-time
+        description:
+          type: string
+        reference:
+          type: string
+        postings:
+          type: array
+          minItems: 2
+          items:
+            $ref: "#/components/schemas/PostingInput"
+
+    PostingInput:
+      type: object
+      required: [id, account_id, amount, currency]
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        amount:
+          type: string
+          description: Decimal string
+        currency:
+          type: string
+        memo:
+          type: string
+
+    JournalEntryList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/JournalEntry"
+        meta:
+          $ref: "#/components/schemas/Meta"
+
+    # ── Fiscal Period ─────────────────────────────────────────────────────────
+    FiscalPeriod:
+      type: object
+      required: [id, household_id, name, start_date, end_date]
+      properties:
+        id:
+          type: string
+        household_id:
+          type: string
+        name:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        locked_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateFiscalPeriodRequest:
+      type: object
+      required: [id, name, start_date, end_date]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    FiscalPeriodList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/FiscalPeriod"
+        meta:
+          $ref: "#/components/schemas/Meta"
+
+    # ── Reports ───────────────────────────────────────────────────────────────
+    BalanceSheetLine:
+      type: object
+      required: [account_id, name, type, currency, balance]
+      properties:
+        account_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        currency:
+          type: string
+        balance:
+          type: string
+          description: Decimal string
+
+    BalanceSheet:
+      type: object
+      required: [as_of, lines]
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/BalanceSheetLine"
+
+    IncomeStatementLine:
+      type: object
+      required: [account_id, name, type, currency, balance]
+      properties:
+        account_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        currency:
+          type: string
+        balance:
+          type: string
+          description: Decimal string
+
+    IncomeStatement:
+      type: object
+      required: [after, before, lines]
+      properties:
+        after:
+          type: string
+          format: date-time
+        before:
+          type: string
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomeStatementLine"
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HearthError"
+    Forbidden:
+      description: Authenticated but not permitted for this resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HearthError"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HearthError"
+    Conflict:
+      description: Duplicate resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HearthError"
+    UnprocessableEntity:
+      description: Validation failed (GAAP violation or invalid request)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HearthError"
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ── Auth ────────────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      operationId: Login
+      summary: Authenticate and receive a token pair
+      security: []
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/refresh:
+    post:
+      operationId: RefreshToken
+      summary: Exchange a refresh token for a new token pair
+      security: []
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/logout:
+    post:
+      operationId: Logout
+      summary: Revoke the current refresh token
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "204":
+          description: Token revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ── Households ──────────────────────────────────────────────────────────────
+  /households/{householdId}:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: GetHousehold
+      summary: Get household details
+      tags: [households]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: UpdateHousehold
+      summary: Update household details
+      tags: [households]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHouseholdRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Members ─────────────────────────────────────────────────────────────────
+  /households/{householdId}/members:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: ListMembers
+      summary: List all members of a household
+      tags: [members]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: CreateMember
+      summary: Add a new member to the household
+      tags: [members]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "201":
+          description: Member created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /households/{householdId}/members/{memberId}:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: GetMember
+      summary: Get a member by ID
+      tags: [members]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: UpdateMember
+      summary: Update a member's role
+      tags: [members]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: DeleteMember
+      summary: Remove a member from the household
+      tags: [members]
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Accounts ─────────────────────────────────────────────────────────────────
+  /households/{householdId}/accounts:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: ListAccounts
+      summary: List accounts for a household
+      tags: [accounts]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: CreateAccount
+      summary: Create a new account
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /households/{householdId}/accounts/{accountId}:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: GetAccount
+      summary: Get an account by ID
+      tags: [accounts]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: UpdateAccount
+      summary: Update account name or placeholder status
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /households/{householdId}/accounts/{accountId}/balance:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: as_of
+        in: query
+        required: false
+        description: Balance as of this timestamp (RFC 3339); defaults to now
+        schema:
+          type: string
+          format: date-time
+    get:
+      operationId: GetAccountBalance
+      summary: Get the running balance of an account
+      tags: [accounts]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountBalance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Journal Entries ──────────────────────────────────────────────────────────
+  /households/{householdId}/entries:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 50
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: account_id
+        in: query
+        schema:
+          type: string
+      - name: after
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: before
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: description_like
+        in: query
+        schema:
+          type: string
+    get:
+      operationId: ListJournalEntries
+      summary: List journal entries with optional filters
+      tags: [journal]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntryList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: CreateJournalEntry
+      summary: Post a new journal entry
+      tags: [journal]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJournalEntryRequest"
+      responses:
+        "201":
+          description: Entry posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /households/{householdId}/entries/{entryId}:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: GetJournalEntry
+      summary: Get a journal entry by ID
+      tags: [journal]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /households/{householdId}/entries/{entryId}/reverse:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: ReverseJournalEntry
+      summary: Create a reversing entry for the given entry
+      tags: [journal]
+      responses:
+        "201":
+          description: Reversing entry posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ── Fiscal Periods ───────────────────────────────────────────────────────────
+  /households/{householdId}/periods:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: ListFiscalPeriods
+      summary: List fiscal periods for a household
+      tags: [periods]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FiscalPeriodList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: CreateFiscalPeriod
+      summary: Create a fiscal period
+      tags: [periods]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFiscalPeriodRequest"
+      responses:
+        "201":
+          description: Period created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FiscalPeriod"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /households/{householdId}/periods/{periodId}/lock:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: periodId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: LockFiscalPeriod
+      summary: Lock a fiscal period (prevents new entries)
+      tags: [periods]
+      responses:
+        "200":
+          description: Period locked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FiscalPeriod"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Reports ──────────────────────────────────────────────────────────────────
+  /households/{householdId}/reports/balance-sheet:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: as_of
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+    get:
+      operationId: GetBalanceSheet
+      summary: Balance sheet as of a given date
+      tags: [reports]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceSheet"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /households/{householdId}/reports/income-statement:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: after
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: before
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+    get:
+      operationId: GetIncomeStatement
+      summary: Income statement for a date range
+      tags: [reports]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomeStatement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"

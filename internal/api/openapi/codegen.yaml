@@ -1,0 +1,11 @@
+# oapi-codegen configuration for the Hearth API.
+# Used by: make generate-api
+# Output: internal/api/openapi/api.gen.go
+#
+# Run: oapi-codegen -generate types,chi-server -package openapi \
+#        -o internal/api/openapi/api.gen.go docs/openapi.yaml
+package: openapi
+generate:
+  - types
+  - chi-server
+output: internal/api/openapi/api.gen.go

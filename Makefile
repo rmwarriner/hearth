@@ -3,12 +3,18 @@ HEARTH_BIN := $(BINARY_DIR)/hearth
 HEARTHD_BIN := $(BINARY_DIR)/hearthd
 
 SQLITE_MIGRATIONS_DIR := migrations/sqlite
+POSTGRES_MIGRATIONS_DIR := migrations/postgres
 TEST_DB := /tmp/hearth-test.db
+HEARTH_TEST_DB_URL ?= postgres://hearth:hearth@localhost:5432/hearth?sslmode=disable
+
+OPENAPI_SPEC := docs/openapi.yaml
+OPENAPI_OUT  := internal/api/openapi/api.gen.go
+OAPI_CODEGEN := $(shell go env GOPATH)/bin/oapi-codegen
 
 GO := go
 GOFLAGS := -trimpath
 
-.PHONY: all build test lint clean migrate-sqlite
+.PHONY: all build test lint clean migrate-sqlite migrate-postgres generate-api
 
 all: build
 
@@ -35,3 +41,14 @@ migrate-sqlite:
 	@echo "Running SQLite migrations against $(TEST_DB)..."
 	goose -dir $(SQLITE_MIGRATIONS_DIR) sqlite3 "$(TEST_DB)" up
 	@echo "Migrations complete."
+
+migrate-postgres:
+	@echo "Running PostgreSQL migrations against $(HEARTH_TEST_DB_URL)..."
+	goose -dir $(POSTGRES_MIGRATIONS_DIR) postgres "$(HEARTH_TEST_DB_URL)" up
+	@echo "Migrations complete."
+
+generate-api:
+	@which $(OAPI_CODEGEN) > /dev/null 2>&1 || go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+	$(OAPI_CODEGEN) -generate types,chi-server -package openapi \
+		-o $(OPENAPI_OUT) $(OPENAPI_SPEC)
+	@echo "Generated $(OPENAPI_OUT)"
