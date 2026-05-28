@@ -78,3 +78,27 @@ func TestHearthError_UserFacing_NoHelp_OmitsLearnMore(t *testing.T) {
 	out := e.UserFacing()
 	assert.NotContains(t, out, "Learn more")
 }
+
+func TestHearthError_Phase2ErrorCodes_HaveCorrectCodeStrings(t *testing.T) {
+	cases := []struct {
+		code hearth.ErrorCode
+		want string
+	}{
+		{hearth.ErrMemberNotFound, "MEMBER_NOT_FOUND"},
+		{hearth.ErrUnauthorized, "UNAUTHORIZED"},
+		{hearth.ErrForbidden, "FORBIDDEN"},
+		{hearth.ErrTokenExpired, "TOKEN_EXPIRED"},
+		{hearth.ErrTokenInvalid, "TOKEN_INVALID"},
+		{hearth.ErrTokenRevoked, "TOKEN_REVOKED"},
+		{hearth.ErrConflict, "CONFLICT"},
+		{hearth.ErrInvalidRequest, "INVALID_REQUEST"},
+		{hearth.ErrRateLimited, "RATE_LIMITED"},
+	}
+	for _, tc := range cases {
+		t.Run(string(tc.code), func(t *testing.T) {
+			e := hearth.New(tc.code, "test message")
+			assert.Contains(t, e.Error(), tc.want)
+			assert.Equal(t, tc.code, e.Code)
+		})
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/hearth-ledger/hearth/internal/core/currency"
 	"github.com/hearth-ledger/hearth/internal/core/household"
 	"github.com/hearth-ledger/hearth/internal/core/journal"
+	"github.com/hearth-ledger/hearth/internal/core/member"
 	"github.com/hearth-ledger/hearth/internal/core/period"
 )
 
@@ -43,6 +44,33 @@ type Store interface {
 
 	CreateFiscalPeriod(ctx context.Context, p period.FiscalPeriod) error
 	LockFiscalPeriod(ctx context.Context, id period.PeriodID) error
+
+	// Members
+
+	CreateMember(ctx context.Context, m member.Member) error
+	GetMember(ctx context.Context, id member.MemberID) (member.Member, error)
+	GetMemberByEmail(ctx context.Context, householdID account.HouseholdID, email string) (member.Member, error)
+	ListMembers(ctx context.Context, householdID account.HouseholdID) ([]member.Member, error)
+	UpdateMemberRole(ctx context.Context, id member.MemberID, role member.Role) error
+
+	// Refresh tokens (server mode only; SQLite returns ErrNotImplemented)
+
+	CreateRefreshToken(ctx context.Context, t RefreshToken) error
+	GetRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, tokenHash string) error
+	RevokeRefreshTokenFamily(ctx context.Context, familyID string) error
+}
+
+// RefreshToken represents a stored refresh token record.
+// TokenHash is a bcrypt hash of the raw token — the raw value is never stored.
+type RefreshToken struct {
+	TokenHash   string
+	FamilyID    string
+	MemberID    member.MemberID
+	HouseholdID account.HouseholdID
+	IssuedAt    time.Time
+	ExpiresAt   time.Time
+	RevokedAt   *time.Time
 }
 
 // JournalQuery specifies filters for listing journal entries.

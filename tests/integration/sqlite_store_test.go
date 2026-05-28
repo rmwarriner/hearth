@@ -14,6 +14,7 @@ import (
 	"github.com/hearth-ledger/hearth/internal/core/currency"
 	"github.com/hearth-ledger/hearth/internal/core/household"
 	"github.com/hearth-ledger/hearth/internal/core/journal"
+	"github.com/hearth-ledger/hearth/internal/core/member"
 	"github.com/hearth-ledger/hearth/internal/core/period"
 	"github.com/hearth-ledger/hearth/internal/store"
 	"github.com/hearth-ledger/hearth/internal/store/sqlite"
@@ -331,4 +332,101 @@ func TestSQLiteStore_GetAccountBalance_AsOfBeforeEntry_ReturnsZero(t *testing.T)
 	bal, err := s.GetAccountBalance(context.Background(), groceries.ID, asOf)
 	require.NoError(t, err)
 	assert.True(t, bal.Value.IsZero())
+}
+
+// ── Members ────────────────────────────────────────────────────────────────
+
+func seedMember(t *testing.T, s *sqlite.Store) member.Member {
+	t.Helper()
+	m := member.Member{
+		ID:           "member-1",
+		HouseholdID:  "hh-1",
+		DisplayName:  "Alice",
+		Email:        "alice@example.com",
+		Role:         member.RoleOwner,
+		PasswordHash: "$2a$12$fakehash",
+	}
+	require.NoError(t, s.CreateMember(context.Background(), m))
+	return m
+}
+
+func TestSQLiteStore_CreateMember_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	seedMember(t, s)
+}
+
+func TestSQLiteStore_GetMember_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	want := seedMember(t, s)
+
+	got, err := s.GetMember(context.Background(), want.ID)
+	require.NoError(t, err)
+	assert.Equal(t, want.ID, got.ID)
+	assert.Equal(t, want.DisplayName, got.DisplayName)
+	assert.Equal(t, want.Email, got.Email)
+	assert.Equal(t, want.Role, got.Role)
+}
+
+func TestSQLiteStore_GetMember_NotFound_ReturnsMemberNotFound(t *testing.T) {
+	s := newTestStore(t)
+	_, err := s.GetMember(context.Background(), "no-such-member")
+	require.Error(t, err)
+	var he *hearth.HearthError
+	require.ErrorAs(t, err, &he)
+	assert.Equal(t, hearth.ErrMemberNotFound, he.Code)
+}
+
+func TestSQLiteStore_GetMemberByEmail_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	want := seedMember(t, s)
+
+	got, err := s.GetMemberByEmail(context.Background(), "hh-1", "alice@example.com")
+	require.NoError(t, err)
+	assert.Equal(t, want.ID, got.ID)
+}
+
+func TestSQLiteStore_GetMemberByEmail_NotFound_ReturnsMemberNotFound(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+
+	_, err := s.GetMemberByEmail(context.Background(), "hh-1", "nobody@example.com")
+	require.Error(t, err)
+	var he *hearth.HearthError
+	require.ErrorAs(t, err, &he)
+	assert.Equal(t, hearth.ErrMemberNotFound, he.Code)
+}
+
+func TestSQLiteStore_ListMembers_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	seedMember(t, s)
+
+	members, err := s.ListMembers(context.Background(), "hh-1")
+	require.NoError(t, err)
+	assert.Len(t, members, 1)
+	assert.Equal(t, member.MemberID("member-1"), members[0].ID)
+}
+
+func TestSQLiteStore_UpdateMemberRole_HappyPath(t *testing.T) {
+	s := newTestStore(t)
+	seedHousehold(t, s)
+	m := seedMember(t, s)
+
+	require.NoError(t, s.UpdateMemberRole(context.Background(), m.ID, member.RoleViewer))
+
+	got, err := s.GetMember(context.Background(), m.ID)
+	require.NoError(t, err)
+	assert.Equal(t, member.RoleViewer, got.Role)
+}
+
+func TestSQLiteStore_UpdateMemberRole_NotFound_ReturnsMemberNotFound(t *testing.T) {
+	s := newTestStore(t)
+	err := s.UpdateMemberRole(context.Background(), "no-such-member", member.RoleMember)
+	require.Error(t, err)
+	var he *hearth.HearthError
+	require.ErrorAs(t, err, &he)
+	assert.Equal(t, hearth.ErrMemberNotFound, he.Code)
 }

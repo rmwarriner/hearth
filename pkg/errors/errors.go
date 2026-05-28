@@ -19,6 +19,16 @@ const (
 	ErrCurrencyMismatch   ErrorCode = "CURRENCY_MISMATCH"
 	ErrNotImplemented     ErrorCode = "NOT_IMPLEMENTED"
 	ErrInternal           ErrorCode = "INTERNAL"
+
+	ErrMemberNotFound ErrorCode = "MEMBER_NOT_FOUND"
+	ErrUnauthorized   ErrorCode = "UNAUTHORIZED"
+	ErrForbidden      ErrorCode = "FORBIDDEN"
+	ErrTokenExpired   ErrorCode = "TOKEN_EXPIRED"
+	ErrTokenInvalid   ErrorCode = "TOKEN_INVALID"
+	ErrTokenRevoked   ErrorCode = "TOKEN_REVOKED"
+	ErrConflict       ErrorCode = "CONFLICT"
+	ErrInvalidRequest ErrorCode = "INVALID_REQUEST"
+	ErrRateLimited    ErrorCode = "RATE_LIMITED"
 )
 
 // HearthError is the user-facing error type. It carries enough context for

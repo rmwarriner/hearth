@@ -9,6 +9,7 @@ import (
 	"github.com/hearth-ledger/hearth/internal/core/currency"
 	"github.com/hearth-ledger/hearth/internal/core/household"
 	"github.com/hearth-ledger/hearth/internal/core/journal"
+	"github.com/hearth-ledger/hearth/internal/core/member"
 	"github.com/hearth-ledger/hearth/internal/core/period"
 	storeapi "github.com/hearth-ledger/hearth/internal/store"
 )
@@ -50,6 +51,33 @@ func (s *Store) CreateFiscalPeriod(_ context.Context, _ period.FiscalPeriod) err
 	return errNotImplemented
 }
 func (s *Store) LockFiscalPeriod(_ context.Context, _ period.PeriodID) error {
+	return errNotImplemented
+}
+func (s *Store) CreateMember(_ context.Context, _ member.Member) error {
+	return errNotImplemented
+}
+func (s *Store) GetMember(_ context.Context, _ member.MemberID) (member.Member, error) {
+	return member.Member{}, errNotImplemented
+}
+func (s *Store) GetMemberByEmail(_ context.Context, _ account.HouseholdID, _ string) (member.Member, error) {
+	return member.Member{}, errNotImplemented
+}
+func (s *Store) ListMembers(_ context.Context, _ account.HouseholdID) ([]member.Member, error) {
+	return nil, errNotImplemented
+}
+func (s *Store) UpdateMemberRole(_ context.Context, _ member.MemberID, _ member.Role) error {
+	return errNotImplemented
+}
+func (s *Store) CreateRefreshToken(_ context.Context, _ storeapi.RefreshToken) error {
+	return errNotImplemented
+}
+func (s *Store) GetRefreshToken(_ context.Context, _ string) (storeapi.RefreshToken, error) {
+	return storeapi.RefreshToken{}, errNotImplemented
+}
+func (s *Store) RevokeRefreshToken(_ context.Context, _ string) error {
+	return errNotImplemented
+}
+func (s *Store) RevokeRefreshTokenFamily(_ context.Context, _ string) error {
 	return errNotImplemented
 }
 
