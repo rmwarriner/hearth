@@ -24,6 +24,7 @@ linters:
     - unconvert
     - nilerr
     - gosec
+    - noctx
 
   settings:
     govet:
@@ -77,6 +78,11 @@ issues:
       linters:
         - gosec
         - unparam
+        - dupl
+    - path: "tests/integration/"
+      linters:
+        - dupl
+        - noctx
     - path: "internal/cli/"
       linters:
         - unparam

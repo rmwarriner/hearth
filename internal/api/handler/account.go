@@ -8,6 +8,7 @@ import (
 	"github.com/hearth-ledger/hearth/internal/api/openapi"
 	"github.com/hearth-ledger/hearth/internal/core/account"
 	"github.com/hearth-ledger/hearth/internal/core/currency"
+	hearth "github.com/hearth-ledger/hearth/pkg/errors"
 )
 
 func (s *Server) ListAccounts(w http.ResponseWriter, r *http.Request, householdId string) {
@@ -63,6 +64,10 @@ func (s *Server) GetAccount(w http.ResponseWriter, r *http.Request, householdId 
 		jsonError(w, err)
 		return
 	}
+	if string(a.HouseholdID) != householdId {
+		jsonError(w, hearth.New(hearth.ErrAccountNotFound, "account not found"))
+		return
+	}
 	jsonOK(w, accountJSON(a))
 }
 
@@ -78,6 +83,10 @@ func (s *Server) UpdateAccount(w http.ResponseWriter, r *http.Request, household
 		jsonError(w, err)
 		return
 	}
+	if string(a.HouseholdID) != householdId {
+		jsonError(w, hearth.New(hearth.ErrAccountNotFound, "account not found"))
+		return
+	}
 	jsonOK(w, accountJSON(a))
 }
 
@@ -85,6 +94,17 @@ func (s *Server) GetAccountBalance(w http.ResponseWriter, r *http.Request, house
 	asOf := time.Now().UTC()
 	if params.AsOf != nil {
 		asOf = *params.AsOf
+	}
+
+	// Verify account belongs to this household before returning balance.
+	a, err := s.store.GetAccount(r.Context(), account.AccountID(accountId))
+	if err != nil {
+		jsonError(w, err)
+		return
+	}
+	if string(a.HouseholdID) != householdId {
+		jsonError(w, hearth.New(hearth.ErrAccountNotFound, "account not found"))
+		return
 	}
 
 	bal, err := s.store.GetAccountBalance(r.Context(), account.AccountID(accountId), asOf)

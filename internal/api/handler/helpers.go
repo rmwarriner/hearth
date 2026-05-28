@@ -9,6 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/hearth-ledger/hearth/internal/api/middleware"
+	"github.com/hearth-ledger/hearth/internal/auth"
 	"github.com/hearth-ledger/hearth/internal/core/account"
 	"github.com/hearth-ledger/hearth/internal/core/gaap"
 	"github.com/hearth-ledger/hearth/internal/core/period"
@@ -45,6 +46,11 @@ func claimsFromRequest(r *http.Request) string {
 		return ""
 	}
 	return claims.MemberID
+}
+
+// authClaimsFromRequest returns the full JWT claims, or nil if absent.
+func authClaimsFromRequest(r *http.Request) *auth.Claims {
+	return middleware.ClaimsFromContext(r.Context())
 }
 
 // timeNowUTC returns the current UTC time.

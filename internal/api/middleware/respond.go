@@ -26,7 +26,7 @@ func respondError(w http.ResponseWriter, status int, code, message string) {
 func respondAuthError(w http.ResponseWriter, err error) {
 	var he *hearth.HearthError
 	if ok := isHearthError(err, &he); ok {
-		status := errorCodeToStatus(he.Code)
+		status := ErrorCodeToStatus(he.Code)
 		respondError(w, status, string(he.Code), he.Message)
 		return
 	}
@@ -41,13 +41,15 @@ func isHearthError(err error, out **hearth.HearthError) bool {
 	return false
 }
 
-func errorCodeToStatus(code hearth.ErrorCode) int {
+// ErrorCodeToStatus maps a HearthError code to an HTTP status code.
+// Exported so handlers can reuse the same mapping.
+func ErrorCodeToStatus(code hearth.ErrorCode) int {
 	switch code {
 	case hearth.ErrUnauthorized, hearth.ErrTokenInvalid, hearth.ErrTokenExpired, hearth.ErrTokenRevoked:
 		return http.StatusUnauthorized
 	case hearth.ErrForbidden:
 		return http.StatusForbidden
-	case hearth.ErrAccountNotFound, hearth.ErrHouseholdNotFound, hearth.ErrMemberNotFound:
+	case hearth.ErrNotFound, hearth.ErrAccountNotFound, hearth.ErrHouseholdNotFound, hearth.ErrMemberNotFound:
 		return http.StatusNotFound
 	case hearth.ErrConflict:
 		return http.StatusConflict

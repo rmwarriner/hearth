@@ -20,6 +20,7 @@ const (
 	ErrNotImplemented     ErrorCode = "NOT_IMPLEMENTED"
 	ErrInternal           ErrorCode = "INTERNAL"
 
+	ErrNotFound       ErrorCode = "NOT_FOUND"
 	ErrMemberNotFound ErrorCode = "MEMBER_NOT_FOUND"
 	ErrUnauthorized   ErrorCode = "UNAUTHORIZED"
 	ErrForbidden      ErrorCode = "FORBIDDEN"

@@ -14,7 +14,10 @@ OAPI_CODEGEN := $(shell go env GOPATH)/bin/oapi-codegen
 GO := go
 GOFLAGS := -trimpath
 
-.PHONY: all build test lint clean migrate-sqlite migrate-postgres generate-api
+DOCKER_COMPOSE := docker compose -f deploy/docker-compose.yml
+
+.PHONY: all build test lint clean migrate-sqlite migrate-postgres generate-api \
+        docker-build docker-up docker-down test-integration-postgres
 
 all: build
 
@@ -29,7 +32,12 @@ $(HEARTHD_BIN): $(shell find cmd/hearthd internal pkg -name '*.go' 2>/dev/null)
 	$(GO) build $(GOFLAGS) -o $@ ./cmd/hearthd
 
 test:
+ifeq ($(HEARTH_SKIP_INTEGRATION),1)
+	$(GO) test -race -coverprofile=coverage.txt -covermode=atomic \
+		$(shell go list ./... | grep -v tests/integration)
+else
 	$(GO) test -race -coverprofile=coverage.txt -covermode=atomic ./...
+endif
 
 lint:
 	golangci-lint run ./...
@@ -52,3 +60,16 @@ generate-api:
 	$(OAPI_CODEGEN) -generate types,chi-server -package openapi \
 		-o $(OPENAPI_OUT) $(OPENAPI_SPEC)
 	@echo "Generated $(OPENAPI_OUT)"
+
+docker-build:
+	$(DOCKER_COMPOSE) build
+
+docker-up:
+	$(DOCKER_COMPOSE) up -d
+
+docker-down:
+	$(DOCKER_COMPOSE) down -v
+
+test-integration-postgres:
+	HEARTH_TEST_DB_URL=$(HEARTH_TEST_DB_URL) \
+		$(GO) test -race -v -timeout 120s ./tests/integration/...

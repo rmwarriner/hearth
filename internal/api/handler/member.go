@@ -27,6 +27,12 @@ func (s *Server) ListMembers(w http.ResponseWriter, r *http.Request, householdId
 }
 
 func (s *Server) CreateMember(w http.ResponseWriter, r *http.Request, householdId string) {
+	// Only owners can invite new members.
+	if claims := authClaimsFromRequest(r); claims == nil || claims.Role != string(member.RoleOwner) {
+		jsonError(w, hearth.New(hearth.ErrForbidden, "only owners can add members"))
+		return
+	}
+
 	var req struct {
 		DisplayName string `json:"display_name"`
 		Email       string `json:"email"`
@@ -85,6 +91,13 @@ func (s *Server) GetMember(w http.ResponseWriter, r *http.Request, householdId s
 }
 
 func (s *Server) UpdateMember(w http.ResponseWriter, r *http.Request, householdId string, memberId string) {
+	// Require caller to have owner role to change another member's role.
+	claims := authClaimsFromRequest(r)
+	if claims == nil || claims.Role != string(member.RoleOwner) {
+		jsonError(w, hearth.New(hearth.ErrForbidden, "only owners can change member roles"))
+		return
+	}
+
 	var req struct {
 		Role string `json:"role"`
 	}
@@ -97,16 +110,28 @@ func (s *Server) UpdateMember(w http.ResponseWriter, r *http.Request, householdI
 		writeError(w, http.StatusUnprocessableEntity, "INVALID_REQUEST", "invalid role")
 		return
 	}
-	if err := s.store.UpdateMemberRole(r.Context(), member.MemberID(memberId), role); err != nil {
-		jsonError(w, err)
-		return
-	}
-	m, err := s.store.GetMember(r.Context(), member.MemberID(memberId))
+
+	// Verify target member belongs to this household.
+	target, err := s.store.GetMember(r.Context(), member.MemberID(memberId))
 	if err != nil {
 		jsonError(w, err)
 		return
 	}
-	jsonOK(w, memberJSON(m))
+	if string(target.HouseholdID) != householdId {
+		jsonError(w, hearth.New(hearth.ErrMemberNotFound, "member not found in this household"))
+		return
+	}
+
+	if err := s.store.UpdateMemberRole(r.Context(), member.MemberID(memberId), role); err != nil {
+		jsonError(w, err)
+		return
+	}
+	updated, err := s.store.GetMember(r.Context(), member.MemberID(memberId))
+	if err != nil {
+		jsonError(w, err)
+		return
+	}
+	jsonOK(w, memberJSON(updated))
 }
 
 func (s *Server) DeleteMember(w http.ResponseWriter, r *http.Request, householdId string, memberId string) {

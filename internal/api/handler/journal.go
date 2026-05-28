@@ -123,6 +123,10 @@ func (s *Server) GetJournalEntry(w http.ResponseWriter, r *http.Request, househo
 		jsonError(w, err)
 		return
 	}
+	if string(e.HouseholdID) != householdId {
+		jsonError(w, hearth.New(hearth.ErrNotFound, "entry not found"))
+		return
+	}
 	jsonOK(w, entryJSON(e))
 }
 
@@ -130,6 +134,10 @@ func (s *Server) ReverseJournalEntry(w http.ResponseWriter, r *http.Request, hou
 	orig, err := s.store.GetJournalEntry(r.Context(), journal.EntryID(entryId))
 	if err != nil {
 		jsonError(w, err)
+		return
+	}
+	if string(orig.HouseholdID) != householdId {
+		jsonError(w, hearth.New(hearth.ErrNotFound, "entry not found"))
 		return
 	}
 

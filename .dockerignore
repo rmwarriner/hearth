@@ -1,0 +1,10 @@
+.git
+bin/
+*.db
+*.db-wal
+*.db-shm
+coverage.txt
+coverage.out
+tests/
+docs/
+deploy/k8s/

@@ -1,7 +1,7 @@
 # Hearth — Architecture & Design Document
 ### A Cloud-Native Household Accounting System
 
-> **Status**: Phase 1 complete — CLI + SQLite core operational  
+> **Status**: Phase 2 complete — REST API + JWT auth + PostgreSQL operational  
 > **Targets**: macOS · Linux · iOS  
 > **Paradigm**: Cloud-native, offline-capable, privacy-first  
 > **Build Method**: AI tooling (Claude Code)
@@ -491,7 +491,7 @@ Extensions live in `pkg/` (stable, public interface) and are wired via configura
 ### Phase 1 — Core Foundation ✓ **(complete)**
 SQLite local mode · Core accounting engine · GAAP guard · CLI (cobra) · goose migrations · Basic account/transaction/journal commands · Unit + integration tests
 
-### Phase 2 — Server Mode
+### Phase 2 — Server Mode ✓ **(complete)**
 PostgreSQL support · REST API (chi) · JWT auth · Household + member model · RLS · Docker deployment · OpenAPI spec
 
 ### Phase 3 — TUI
@@ -557,5 +557,5 @@ ADRs capture *why* a decision was made, not just what was decided. They are inva
 
 ---
 
-*Document version: 0.2 — Phase 1 complete (2026-05-27)*  
-*Next step: Phase 2 — Server mode (PostgreSQL, REST API, JWT auth)*
+*Document version: 0.3 — Phase 2 complete (2026-05-28)*  
+*Next step: Phase 3 — TUI (bubbletea + lipgloss)*

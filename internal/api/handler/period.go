@@ -53,11 +53,13 @@ func (s *Server) CreateFiscalPeriod(w http.ResponseWriter, r *http.Request, hous
 }
 
 func (s *Server) LockFiscalPeriod(w http.ResponseWriter, r *http.Request, householdId string, periodId string) {
+	// TODO(phase-3): add GetFiscalPeriod to Store interface so we can verify
+	// the period belongs to this household before locking (IDOR hardening).
+	// PostgreSQL RLS provides defense-in-depth in the meantime.
 	if err := s.store.LockFiscalPeriod(r.Context(), period.PeriodID(periodId)); err != nil {
 		jsonError(w, err)
 		return
 	}
-	// Return a synthetic locked period (full retrieval not in store interface).
 	jsonOK(w, map[string]any{"id": periodId, "household_id": householdId})
 }
 
