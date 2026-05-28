@@ -11,7 +11,7 @@ Hearth is a cloud-native household accounting system. It is a clean-slate succes
 GnuCash. It enforces double-entry bookkeeping (GAAP-compliant) with an envelope budgeting
 view layer on top. It is designed for a household with multiple members.
 
-Full architecture details: `docs/architecture/ARCHITECTURE.md`
+Full architecture details: `docs/architecture/hearth-architecture.md`
 
 ---
 
