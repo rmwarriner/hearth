@@ -73,3 +73,6 @@ docker-down:
 test-integration-postgres:
 	HEARTH_TEST_DB_URL=$(HEARTH_TEST_DB_URL) \
 		$(GO) test -race -v -timeout 120s ./tests/integration/...
+
+tui:
+	$(GO) run ./cmd/hearth tui
