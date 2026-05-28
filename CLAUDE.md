@@ -44,7 +44,7 @@ stop and say so rather than working around it silently.
 
 | Layer | Choice |
 |---|---|
-| Language | Go 1.23+ |
+| Language | Go 1.26+ |
 | CLI framework | cobra + viper |
 | TUI framework | bubbletea + lipgloss + huh |
 | HTTP router | chi v5 |
@@ -54,6 +54,7 @@ stop and say so rather than working around it silently.
 | Server database | PostgreSQL 16+ |
 | Migrations | pressly/goose v3 |
 | SQL codegen | sqlc (dev tool, not a runtime dep) |
+| API codegen | oapi-codegen v2 (dev tool, not a runtime dep) |
 | Logging | rs/zerolog |
 | Tracing | go.opentelemetry.io/otel |
 | Testing | testify + testcontainers-go + teatest |
@@ -72,12 +73,18 @@ hearth/
 │   ├── hearth/main.go          ← CLI entrypoint
 │   └── hearthd/main.go         ← Server daemon entrypoint
 ├── internal/
+│   ├── auth/                   ← JWT auth service (login, refresh, logout, validate)
 │   ├── core/                   ← Pure domain logic — no I/O, no database
 │   │   ├── account/
 │   │   ├── journal/
+│   │   ├── member/
+│   │   ├── household/
+│   │   ├── period/
 │   │   ├── envelope/
 │   │   ├── gaap/               ← Validation rules, GAAP guard
 │   │   └── currency/
+│   ├── observability/          ← zerolog logger with PII redaction
+│   ├── server/                 ← hearthd wiring (config, wire, graceful shutdown)
 │   ├── store/                  ← Storage abstraction layer
 │   │   ├── store.go            ← Store interface (the contract)
 │   │   ├── sqlite/
@@ -85,21 +92,11 @@ hearth/
 │   ├── api/                    ← REST API (server mode only)
 │   │   ├── handler/
 │   │   ├── middleware/
-│   │   └── openapi/
-│   ├── ai/                     ← AI harness (tiered)
-│   │   ├── rules/              ← Tier 0: no external calls
-│   │   ├── inference/          ← Tier 1: private endpoint
-│   │   ├── external/           ← Tier 2: external provider
-│   │   └── privacy/            ← Scrubber, policy, field permissions
-│   ├── importer/
-│   │   ├── ofx/
-│   │   ├── csv/
-│   │   ├── qif/
-│   │   ├── simplefin/          ← Primary bank feed connector
-│   │   ├── plaid/              ← Stub only — future integration
-│   │   └── gnucash/
-│   ├── sync/
-│   └── tui/
+│   │   └── openapi/            ← oapi-codegen generated types + server interface
+│   ├── ai/                     ← AI harness (tiered) — TODO(phase-5)
+│   ├── importer/               ← Bank feed importers — TODO(phase-4)
+│   ├── sync/                   ← Local↔Server sync — TODO(phase-4)
+│   └── tui/                    ← Bubbletea TUI — TODO(phase-3)
 ├── pkg/
 │   ├── errors/                 ← Typed errors with recovery hints
 │   └── event/
@@ -111,9 +108,12 @@ hearth/
 │   ├── Dockerfile
 │   └── k8s/
 ├── docs/
+│   ├── openapi.yaml            ← OpenAPI 3.0.3 spec (source of truth)
 │   ├── architecture/
-│   │   ├── ARCHITECTURE.md
-│   │   └── adr/                ← Architecture Decision Records
+│   │   ├── hearth-architecture.md
+│   │   ├── PHASE1.md
+│   │   ├── PHASE2.md
+│   │   └── adr/                ← Architecture Decision Records (ADR-001 through ADR-007)
 │   └── man/
 └── tests/
     ├── unit/
@@ -289,7 +289,11 @@ What are the trade-offs?
 
 ## Current Phase
 
-**Phase 1 — Core Foundation**
+**Phase 2 — Server Mode** is complete (2026-05-28).
 
-See `docs/architecture/PHASE1.md` for the specific task list and acceptance criteria.
-Do not work outside Phase 1 scope without explicit instruction.
+- Phase 1 spec: `docs/architecture/PHASE1.md`
+- Phase 2 spec: `docs/architecture/PHASE2.md`
+
+**Next: Phase 3 — TUI** (bubbletea + lipgloss interactive terminal interface).
+
+Do not work outside the current phase scope without explicit instruction.

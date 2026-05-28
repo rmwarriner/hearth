@@ -15,7 +15,7 @@ The stateless approach was rejected because there is no path to revoke a comprom
 
 **Access tokens**: Short-lived signed JWTs (15-minute TTL). Claims include `mid` (member ID), `hid` (household ID), and `role`. Validated on every API request without a database lookup.
 
-**Refresh tokens**: 32-byte cryptographically random values, base64url-encoded. Stored as a bcrypt hash (cost 12) in the `refresh_tokens` table. Expire after 7 days. On every use, the old token is immediately revoked and a new pair is issued (**rotation**).
+**Refresh tokens**: 32-byte cryptographically random values, hex-encoded. Stored as a **SHA-256 hash** in the `refresh_tokens` table. Expire after 7 days. On every use, the old token is immediately revoked and a new pair is issued (**rotation**).
 
 **Token families**: Each issuance chain (login → refresh → refresh → ...) shares a `family_id` UUID. If a revoked token is presented (replay attack), the entire family is revoked — all active tokens derived from the same login event are invalidated. The member must re-authenticate.
 
@@ -28,4 +28,5 @@ The stateless approach was rejected because there is no path to revoke a comprom
 - Every refresh requires a database write (revoke old, create new). This is one extra write per refresh event, not per API request — acceptable overhead.
 - Horizontal scaling requires a shared database (already required by PostgreSQL). No sticky sessions or shared in-memory state needed.
 - Token family revocation is aggressive: a replay of any token in a chain revokes all sessions from that login. Users will need to re-authenticate if a token is compromised and replayed. This is the correct trade-off for a financial application.
-- Bcrypt at cost 12 is intentionally slow (~250ms). Auth service unit tests use `bcrypt.MinCost` (4) via a config field to keep tests fast.
+- SHA-256 is used for refresh token storage rather than bcrypt, because bcrypt is non-deterministic (random salt per hash) and therefore cannot be used as a database lookup key. The raw token is 32 bytes of `crypto/rand` output, making SHA-256 safe as a deterministic storage hash — an attacker who obtains the hash cannot reverse it to the 256-bit random value.
+- Bcrypt is still used for **passwords** at cost 12 (~250ms). Auth service unit tests set `BcryptCost: bcrypt.MinCost` (4) to keep the test suite fast.

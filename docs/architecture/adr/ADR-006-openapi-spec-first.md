@@ -9,7 +9,7 @@ The REST API needs a machine-readable contract for three consumers: the Go serve
 1. **Code-first** — annotate Go types and handlers with struct tags or reflection; generate the OpenAPI spec from Go source at build time (e.g., `ogen`, `swaggo`).
 2. **Spec-first** — hand-write `docs/openapi.yaml` as the source of truth; use `oapi-codegen` to generate Go server stubs and request/response types from the spec.
 
-The `hearth-architecture.md` document already states: *"OpenAPI 3.1 spec is the source of truth."* Spec-first is the stated intent.
+The `hearth-architecture.md` document already states: *"OpenAPI spec is the source of truth."* Spec-first is the stated intent.
 
 Code-first was rejected for two reasons:
 - Annotation-heavy code entangles business logic with HTTP contract concerns, making handlers harder to test in isolation.
@@ -17,7 +17,9 @@ Code-first was rejected for two reasons:
 
 ## Decision
 
-`docs/openapi.yaml` is the single source of truth for the API contract. It is hand-written.
+`docs/openapi.yaml` (OpenAPI **3.0.3**) is the single source of truth for the API contract. It is hand-written.
+
+Note: OpenAPI 3.1 was evaluated but `oapi-codegen` v2 does not yet fully support 3.1 schema semantics (nullable types, `const`, JSON Schema 2020-12 vocabulary). The spec uses 3.0.3, which is fully supported. This can be revisited when oapi-codegen adds stable 3.1 support.
 
 `oapi-codegen` is used as a **dev-time codegen tool** (equivalent to `sqlc`) to generate:
 - Request/response types (`internal/api/openapi/api.gen.go`)
